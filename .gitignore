@@ -1,5 +1,7 @@
 /.env/*
 /.vscode/*
+*/migration/*
 */__pycache__/*
 */migrations/__pycache__/*
+/*.sqlite3
 

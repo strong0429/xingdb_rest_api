@@ -1,10 +1,12 @@
+from django.http import Http404
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 
 from rest_framework_jwt.utils import jwt_encode_handler, jwt_decode_handler
 
-from .models import XingUser
+from .models import *
 from .serializers import *
 
 # Create your views here.
@@ -28,7 +30,7 @@ class SMSCode(APIView):
                 'sms_code': '118590'})
             return Response({'token': token}, status=status.HTTP_200_OK)
 
-class UserRegister(APIView):
+class UserRegisterView(APIView):
     permission_classes = ()
     authentication_classes = ()
 
@@ -64,3 +66,55 @@ class UserRegister(APIView):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
         
+class StoreListView(APIView):
+    def get(self, request, format=None):
+        #stores = Store.objects.all()
+        stores = Store.objects.filter(owner_id=request.user.id)
+        serializer = StoreSerializer(stores, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        request.data['owner_id'] = request.user.id
+        serializer = StoreSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class StoreDetailView(APIView):
+    def get_object(self, pk):
+        try:
+            return Store.objects.get(pk=pk)
+        except Store.DoesNotExist:
+            raise Http404
+
+    def has_permission(self, store, owner):
+        if store.owner.id != owner.id and not owner.is_superuser:
+            raise PermissionDenied
+
+    def get(self, request, pk, format=None):
+        store = self.get_object(pk)
+        self.has_permission(store, request.user)
+        serializer = StoreSerializer(store)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        store = self.get_object(pk)
+        self.has_permission(store, request.user)
+        if 'owner_id' not in request.data:
+            request.data['owner_id'] = store.owner.id
+        if 'category_id' not in request.data:
+            request.data['category_id'] = store.category.id
+        if 'pay_mode_id' not in request.data:
+            request.data['pay_mode_id'] = store.pay_mode.id
+        serializer = StoreSerializer(store, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        store = self.get_object(pk)
+        self.has_permission(store, request.user)
+        store.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
