@@ -57,6 +57,7 @@ REST_FRAMEWORK = {
 }
 
 JWT_AUTH = {
+    'JWT_RESPONSE_PAYLOAD_HANDLER': 'public.utils.jwt_response_payload_handler',
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
 }
 
@@ -96,15 +97,15 @@ WSGI_APPLICATION = 'xingdb_proj.wsgi.application'
 
 DATABASES = {
     'default': {
-        #'ENGINE': 'django.db.backends.sqlite3',
-        #'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'xingdb',
-        'USER': 'xingdb',
-        'PASSWORD': 'leeq@9091',
-        'HOST': '47.107.166.137',
-        'PORT': '3306',
+        #'ENGINE': 'django.db.backends.mysql',
+        #'NAME': 'xingdb',
+        #'USER': 'xingdb',
+        #'PASSWORD': 'leeq@9091',
+        #'HOST': '47.107.166.137',
+        #'PORT': '3306',
     }
 }
 
