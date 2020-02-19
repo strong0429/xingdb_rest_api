@@ -9,14 +9,15 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_jwt.utils import jwt_encode_handler
 from rest_framework_jwt.views import obtain_jwt_token
+from rest_framework_jwt.views import JSONWebTokenAPIView
+from rest_framework_jwt.serializers import JSONWebTokenSerializer
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from django.contrib.auth.hashers import check_password
 
 from public.utils import RegisterAuthentication
 from .serializers_user import *
 from .models import XingUser
-
-user_login = obtain_jwt_token
 
 #获取短消息验证码API
 class SMSCodeView(APIView):
@@ -37,6 +38,27 @@ class SMSCodeView(APIView):
                 'mobile': mobile,
                 'sms_code': '118590'})
             return Response({'token': token}, status=status.HTTP_200_OK)
+
+#用户登录API
+class UserLoginView(JSONWebTokenAPIView):
+    authentication_classes = (JSONWebTokenAuthentication,)
+    serializer_class = JSONWebTokenSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.object.get('user') or request.user
+            token = serializer.object.get('token')
+            #response_data = jwt_response_payload_handler(token, user, request)
+            response_data = {
+                'token': token,
+                'user': XingUserSerializer(user).data
+                }
+            user.last_login = datetime.now()
+            user.save()
+            return Response(response_data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 #用户注册API
 class UserRegisterView(APIView):

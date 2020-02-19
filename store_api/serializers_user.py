@@ -6,7 +6,7 @@ import re
 from rest_framework import serializers
 
 from .models import XingUser
-from .serializers import StoreSerializer
+from .serializers_store import StoreSerializer
 
 #短信验证码的序列化类
 class SMSCodeSerializer(serializers.Serializer):
