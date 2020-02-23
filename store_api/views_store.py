@@ -8,25 +8,31 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
-from .models import Store
+from .models import Store, StoreStaff
 from .serializers_store import StoreSerializer
 
 #店铺查询、注册API
 class StoreListView(APIView):
     def get(self, request, format=None):
-        stores = Store.objects.filter(owner=request.user.id)
+        #以下两种查询方式都可以
+        #stores = Store.objects.filter(staffs__id=request.user.id)
+        #stores = request.user.store_set.all()
+        #只有店主才可以查询店铺信息
+        stores = Store.objects.filter(
+            staffs__id = request.user.id,
+            storestaff__position = 'OW')
+        
         serializer = StoreSerializer(stores, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        request.data['owner'] = request.user.id
+        #request.data['owner'] = request.user.id
         serializer = StoreSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            #更新用户的is_staff属性
-            if not request.user.is_staff:
-                request.user.is_staff = True
-                request.user.save()
+            store = serializer.save()
+            #更新store_staff表
+            store_staff = StoreStaff(store=store, staff=request.user, position='OW')
+            store_staff.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -67,10 +73,5 @@ class StoreDetailView(APIView):
         store = self.get_object(pk)
         self.has_permission(store, request.user)
         store.delete()
-
-        if not Store.objects.filter(owner=request.user.id):
-            request.user.is_staff = False
-            request.user.save()
-            
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
         

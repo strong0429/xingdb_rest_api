@@ -5,8 +5,18 @@
 import re
 from rest_framework import serializers
 
-from .models import XingUser
-from .serializers_store import StoreSerializer
+from .models import XingUser,AppVersion, StoreStaff
+from .serializers_store import StoreSerializer, StoreStaffSerializer
+
+#App版本序列化类
+class AppVersionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppVersion
+        exclude = ('id',)
+        extra_kwargs = {
+            'ver_code': {'read_only': True},
+            'ver_txt': {'read_only': True},
+        }
 
 #短信验证码的序列化类
 class SMSCodeSerializer(serializers.Serializer):
@@ -51,19 +61,31 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 #用户登录、查询、更新(不包括修改密码）序列化类
 class XingUserSerializer(serializers.ModelSerializer):
-    stores = StoreSerializer(many=True, read_only=True)  #整个类
+    #stores = StoreSerializer(many=True, read_only=True)  #整个类
     #stores = serializers.StringRelatedField(many=True, read_only=True)  #类的字符串
     #stores = serializers.PrimaryKeyRelatedField(many=True, read_only=True)  #类的主键
     #stores = serializers.SlugRelatedField(many=True, read_only=True, slug_field=('id', 'name'))  #slug_field指定的字段
 
+    stores = serializers.SerializerMethodField()
+
     class Meta:
         model = XingUser
-        exclude = ('password', 'is_superuser')
+        exclude = ('password', 'is_superuser', 'is_staff')
         #以下属性不被修改
         extra_kwargs = {
-            'is_stuff': {'read_only': True},
             'is_active': {'read_only': True},
         }
+
+    def get_stores(self, obj):
+        data = []
+        for store in obj.store_set.all():
+            tmp = {}
+            tmp['id'] = store.id
+            tmp['name'] = store.name
+            ss = StoreStaff.objects.get(store=store.id, staff=obj.id)
+            tmp['position'] = ss.position
+            data.append(tmp)
+        return data
 
     def update(self, instance, validated_data):
         instance.username = validated_data.get('username', instance.username)

@@ -2,7 +2,7 @@
 2020.02.18
     实现短消息验证码、用户注册、用户登录、修改密码等API接口
 """
-from datetime import datetime, timedelta
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -19,6 +19,24 @@ from public.utils import RegisterAuthentication
 from .serializers_user import *
 from .models import XingUser
 
+#获取App版本信息API
+class AppVersionView(APIView):
+    def get(self, request, format=None):
+        if 'app_name' in request.query_params:
+            app_name = request.query_params['app_name']
+        elif 'app_name' in request.data:
+            #为了兼容http测试工具
+            app_name = request.data['app_name']
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            app = AppVersion.objects.get(app_name=app_name)
+        except AppVersion.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = AppVersionSerializer(app)
+        return Response(serializer.data)
+
 #获取短消息验证码API
 class SMSCodeView(APIView):
     #permission_classes = ()
@@ -34,7 +52,7 @@ class SMSCodeView(APIView):
 
             #生成随机验证码，向目标手机发送验证码，用手机号码和验证码生成token
             token = jwt_encode_handler({
-                'exp': datetime.utcnow() + timedelta(minutes=3),  #有效期：3分钟
+                'exp': timezone.now() + timezone.timedelta(minutes=3),  #有效期：3分钟
                 'mobile': mobile,
                 'sms_code': '118590'})
             return Response({'token': token}, status=status.HTTP_200_OK)
@@ -55,7 +73,7 @@ class UserLoginView(JSONWebTokenAPIView):
                 'token': token,
                 'user': XingUserSerializer(user).data
                 }
-            user.last_login = datetime.now()
+            user.last_login = timezone.now()
             user.save()
             return Response(response_data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -83,7 +101,7 @@ class UserRegisterView(APIView):
                 status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_200_OK)
         
 #用户信息查询、更新API
 class UserDetailView(APIView):
