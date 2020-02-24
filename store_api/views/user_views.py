@@ -16,8 +16,12 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from django.contrib.auth.hashers import check_password
 
 from public.utils import RegisterAuthentication
-from .serializers_user import *
-from .models import XingUser
+from store_api.serializers import (
+    AppVersionSerializer, 
+    SMSCodeSerializer, 
+    UserRegisterSerializer,
+    XingUserSerializer)
+from store_api.models import XingUser
 
 #获取App版本信息API
 class AppVersionView(APIView):

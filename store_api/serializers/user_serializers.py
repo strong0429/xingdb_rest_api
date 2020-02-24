@@ -5,8 +5,8 @@
 import re
 from rest_framework import serializers
 
-from .models import XingUser,AppVersion, StoreStaff
-from .serializers_store import StoreSerializer, StoreStaffSerializer
+from store_api.models import XingUser,AppVersion, StoreStaff
+from . import StoreSerializer, StoreStaffSerializer
 
 #App版本序列化类
 class AppVersionSerializer(serializers.ModelSerializer):

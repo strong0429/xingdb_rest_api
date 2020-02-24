@@ -9,7 +9,7 @@ from rest_framework.authentication import (
     BaseAuthentication, get_authorization_header
 )
 
-from store_api.serializers_user import XingUserSerializer
+from store_api.serializers import XingUserSerializer
 
 # 用户登录时的鉴权类
 class RegisterAuthentication(BaseAuthentication):

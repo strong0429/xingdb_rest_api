@@ -8,8 +8,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
-from .models import Store, StoreStaff
-from .serializers_store import StoreSerializer
+from store_api.models import Store, StoreStaff
+from store_api.serializers import StoreSerializer
 
 #店铺查询、注册API
 class StoreListView(APIView):
