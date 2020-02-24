@@ -82,7 +82,9 @@ class XingUserSerializer(serializers.ModelSerializer):
             tmp = {}
             tmp['id'] = store.id
             tmp['name'] = store.name
-            ss = StoreStaff.objects.get(store=store.id, staff=obj.id)
+            #以下两种方法都可以
+            ss = obj.storestaff_set.get(store=store.id)
+            #ss = StoreStaff.objects.get(store=store.id, staff=obj.id)
             tmp['position'] = ss.position
             data.append(tmp)
         return data
