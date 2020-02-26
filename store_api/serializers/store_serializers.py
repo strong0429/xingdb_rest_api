@@ -3,7 +3,7 @@
     定义和店铺操作API接口相关的序列化类
 """
 from rest_framework import serializers
-from store_api.models import Store, StoreStaff, XingUser
+from ..models import Store, StoreStaff, XingUser
 
 class StoreStaffSerializer(serializers.ModelSerializer):
     staff_name = serializers.ReadOnlyField(source='staff.username')

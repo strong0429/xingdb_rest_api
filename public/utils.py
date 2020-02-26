@@ -1,17 +1,18 @@
 import jwt
+from django.utils import timezone
 from django.utils.encoding import smart_text
 from django.utils.translation import ugettext as _
-from rest_framework import exceptions
+from rest_framework import exceptions, permissions
 from rest_framework_jwt.settings import api_settings
-from rest_framework_jwt.utils import jwt_decode_handler
+from rest_framework_jwt.utils import jwt_decode_handler, jwt_payload_handler
 
 from rest_framework.authentication import (
-    BaseAuthentication, get_authorization_header
-)
+    BaseAuthentication, 
+    get_authorization_header)
 
 from store_api.serializers import XingUserSerializer
 
-# 用户登录时的鉴权类
+# 用户注册时的鉴权类
 class RegisterAuthentication(BaseAuthentication):
     #重写鉴权认证方法
     def authenticate(self, request):
@@ -54,3 +55,11 @@ def jwt_response_payload_handler(token, user=None, request=None):
         response['user'] = XingUserSerializer(user).data
 
     return response
+
+# 定义获取Token的权限
+class TokenPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        #限制 Authenticator 不能执行操作
+        print(request.user.username)
+        return request.user.username != 'Authenticator'
+

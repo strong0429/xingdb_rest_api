@@ -3,10 +3,51 @@
     定义和用户API接口相关的序列化类
 """
 import re
+from django.utils import timezone
+from django.utils.translation import ugettext as _
+from django.contrib.auth import authenticate
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
+from rest_framework_jwt.serializers import JSONWebTokenSerializer
+from rest_framework_jwt.serializers import jwt_payload_handler, jwt_encode_handler
 
-from store_api.models import XingUser,AppVersion, StoreStaff
+from ..models import XingUser,AppVersion, StoreStaff
 from . import StoreSerializer, StoreStaffSerializer
+
+# Token 序列化类
+class TokenSerializer(JSONWebTokenSerializer):
+    def validate(self, attrs):
+        # 只能通过 Authenticator 用户获取Token
+        if attrs.get(self.username_field) != 'Authenticator':
+            raise PermissionDenied
+        
+        credentials = {
+            self.username_field: attrs.get(self.username_field),
+            'password': attrs.get('password')
+        }
+
+        if all(credentials.values()):
+            user = authenticate(**credentials)
+
+            if user:
+                if not user.is_active:
+                    msg = _('User account is disabled.')
+                    raise serializers.ValidationError(msg)
+
+                payload = jwt_payload_handler(user)
+                payload['exp'] = timezone.now() + timezone.timedelta(seconds=5000)
+
+                return {
+                    'token': jwt_encode_handler(payload),
+                    'user': user
+                }
+            else:
+                msg = _('Unable to log in with provided credentials.')
+                raise serializers.ValidationError(msg)
+        else:
+            msg = _('Must include "{username_field}" and "password".')
+            msg = msg.format(username_field=self.username_field)
+            raise serializers.ValidationError(msg)
 
 #App版本序列化类
 class AppVersionSerializer(serializers.ModelSerializer):
@@ -33,7 +74,7 @@ class SMSCodeSerializer(serializers.Serializer):
         if re.findall(exp, value):
             #判断号码是否已注册
             if XingUser.objects.filter(mobile=value):
-                raise serializers.ValidationError('手机号码已注册')
+                raise serializers.ValidationError('手机号码已注册', 'registered')
             return value
         else:
             raise serializers.ValidationError('无效的手机号码')
