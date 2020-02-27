@@ -85,6 +85,7 @@ class SMSCodeView(APIView):
 #用户登录API
 class UserLoginView(JSONWebTokenAPIView):
     authentication_classes = (JSONWebTokenAuthentication,)
+
     serializer_class = JSONWebTokenSerializer
     
     def handle_exception(self, exc):

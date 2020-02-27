@@ -25,7 +25,7 @@ class Store(models.Model):
     name = models.CharField('店铺名称', max_length=45, unique=True)
     reg_date = models.DateTimeField('注册日期', auto_now_add=True)
     staffs = models.ManyToManyField(XingUser, through='StoreStaff')
-    category = models.ForeignKey(StoreCategory, on_delete=models.PROTECT, related_name='stores', blank=True)
+    category = models.ForeignKey(StoreCategory, on_delete=models.PROTECT)
     addr_province = models.CharField('省', max_length=16, null=True, blank=True)
     addr_city = models.CharField('市/县', max_length=16, null=True, blank=True)
     addr_district = models.CharField('区/镇', max_length=16, null=True, blank=True)

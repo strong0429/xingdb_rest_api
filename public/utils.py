@@ -60,6 +60,33 @@ def jwt_response_payload_handler(token, user=None, request=None):
 class TokenPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         #限制 Authenticator 不能执行操作
-        print(request.user.username)
         return request.user.username != 'Authenticator'
 
+#APIView异常处理函数
+def handle_api_exception(exc, debug=False):
+    if debug:
+        print('args:', exc.args)
+        print('default_code:', exc.default_code)
+        print('default_detail:', exc.default_detail)
+        print('get_codes:', exc.get_codes())
+        print('get_full_details:', exc.get_full_details())
+        print('status_code:', exc.status_code)
+
+    if not isinstance(exc, exceptions.APIException):
+        return {'code': 777, 'detail': '未知原因的错误。'}
+
+    #if exc.default_code == 'authentication_failed':
+    #    return {'code': exc.status_code, 'detail': exc.args[0]}
+    
+    if exc.default_code == 'invalid':
+        field, code = exc.get_codes().popitem()
+        if code[0] == 'unique':
+            response = {'code': 701, 'detail': exc.args[0][field][0]}
+        elif code[0] == 'required':
+            response = {'code': 703, 'detail': exc.args[0][field][0]}
+        else: #if code in ('does_not_exit', 'null', 'incorrect_type'):
+            response = {'code': 705, 'detail': exc.args[0][field][0]}
+    else:
+        response = {'code': exc.status_code, 'detail': exc.args[0]}
+
+    return response

@@ -10,9 +10,14 @@ from rest_framework.exceptions import PermissionDenied
 
 from ..models import Store, StoreStaff
 from ..serializers import StoreSerializer
+from public.utils import handle_api_exception
 
 #店铺查询、注册API
 class StoreListView(APIView):
+    def handle_exception(self, exc):
+        response = handle_api_exception(exc, True)
+        return Response(response, status=exc.status_code)
+    
     def get(self, request, format=None):
         #以下两种查询方式都可以
         #stores = Store.objects.filter(staffs__id=request.user.id)
@@ -28,7 +33,7 @@ class StoreListView(APIView):
     def post(self, request, format=None):
         #request.data['owner'] = request.user.id
         serializer = StoreSerializer(data=request.data)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             store = serializer.save()
             #更新store_staff表
             store_staff = StoreStaff(store=store, staff=request.user, position='OW')
@@ -38,6 +43,10 @@ class StoreListView(APIView):
 
 #店铺查询、更新、注销API
 class StoreDetailView(APIView):
+    def handle_exception(self, exc):
+        response = handle_api_exception(exc, True)
+        return Response(response, status=exc.status_code)
+    
     def get_object(self, pk):
         try:
             return Store.objects.get(pk=pk)

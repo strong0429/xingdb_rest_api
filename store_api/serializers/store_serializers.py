@@ -14,7 +14,7 @@ class StoreStaffSerializer(serializers.ModelSerializer):
         exclude = ('id', )
 
 class StoreSerializer(serializers.ModelSerializer):
-    staffs = serializers.SerializerMethodField()
+    #staffs = serializers.SerializerMethodField()
     category_name = serializers.ReadOnlyField(source='category.name')
 
     class Meta:
@@ -22,7 +22,6 @@ class StoreSerializer(serializers.ModelSerializer):
         exclude = ('id',)
         
         extra_kwargs = {
-            'owner': {'write_only': True},
             'category': {'write_only': True},
             }
             
