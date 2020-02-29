@@ -12,6 +12,9 @@ from rest_framework.authentication import (
 
 from store_api.serializers import XingUserSerializer
 
+# 调试开关
+SW_DEBUG = True
+
 # 用户注册时的鉴权类
 class RegisterAuthentication(BaseAuthentication):
     #重写鉴权认证方法
@@ -73,6 +76,8 @@ def handle_api_exception(exc, debug=False):
         print('status_code:', exc.status_code)
 
     if not isinstance(exc, exceptions.APIException):
+        if debug:
+            print('Exception type:', type(exc))
         return {'code': 777, 'detail': '未知原因的错误。'}
 
     #if exc.default_code == 'authentication_failed':
@@ -80,13 +85,19 @@ def handle_api_exception(exc, debug=False):
     
     if exc.default_code == 'invalid':
         field, code = exc.get_codes().popitem()
-        if code[0] == 'unique':
-            response = {'code': 701, 'detail': exc.args[0][field][0]}
-        elif code[0] == 'required':
-            response = {'code': 703, 'detail': exc.args[0][field][0]}
-        else: #if code in ('does_not_exit', 'null', 'incorrect_type'):
-            response = {'code': 705, 'detail': exc.args[0][field][0]}
+        detail = {'field': field, 'message': exc.args[0][field][0]}
+        if code[0] == 'unique': # 唯一性冲突
+            response = {'code': 701, 'detail': detail}
+        elif code[0] == 'required': # 缺失关键参数
+            response = {'code': 702, 'detail': detail}
+        elif code[0] == 'disabled': # user account is disabled
+            response = {'code': 703, 'detail': detail}
+        elif code[0] == 'disaccord':
+            response = {'code': 704, 'detail': detail}
+        else: #if code in ('does_not_exit', 'null', 'incorrect_type'): #无效的参数
+            response = {'code': 705, 'detail': detail}
     else:
-        response = {'code': exc.status_code, 'detail': exc.args[0]}
+        detail = {'field': 'non_field_errors', 'message': exc.default_detail}
+        response = {'code': exc.status_code, 'detail': detail}
 
     return response

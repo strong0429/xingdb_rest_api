@@ -32,7 +32,7 @@ class TokenSerializer(JSONWebTokenSerializer):
             if user:
                 if not user.is_active:
                     msg = _('User account is disabled.')
-                    raise serializers.ValidationError(msg)
+                    raise serializers.ValidationError(msg, 'disabled')
 
                 payload = jwt_payload_handler(user)
                 payload['exp'] = timezone.now() + timezone.timedelta(seconds=5000)
@@ -74,10 +74,10 @@ class SMSCodeSerializer(serializers.Serializer):
         if re.findall(exp, value):
             #判断号码是否已注册
             if XingUser.objects.filter(mobile=value):
-                raise serializers.ValidationError('手机号码已注册', 'registered')
+                raise serializers.ValidationError('手机号码已注册。', 'unique')
             return value
         else:
-            raise serializers.ValidationError('无效的手机号码')
+            raise serializers.ValidationError('无效的手机号码。', 'incorrect')
 
 #用户注册序列化类
 class UserRegisterSerializer(serializers.ModelSerializer):

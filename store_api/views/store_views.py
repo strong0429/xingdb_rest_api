@@ -2,20 +2,20 @@
 2020.02.19
     实现店铺注册、查询、更新等API接口
 """
-from django.http import Http404
 from rest_framework import status
+from rest_framework import serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
 from ..models import Store, StoreStaff
 from ..serializers import StoreSerializer
-from public.utils import handle_api_exception
+from public.utils import handle_api_exception, SW_DEBUG
 
 #店铺查询、注册API
 class StoreListView(APIView):
     def handle_exception(self, exc):
-        response = handle_api_exception(exc, True)
+        response = handle_api_exception(exc, SW_DEBUG)
         return Response(response, status=exc.status_code)
     
     def get(self, request, format=None):
@@ -33,25 +33,25 @@ class StoreListView(APIView):
     def post(self, request, format=None):
         #request.data['owner'] = request.user.id
         serializer = StoreSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            store = serializer.save()
-            #更新store_staff表
-            store_staff = StoreStaff(store=store, staff=request.user, position='OW')
-            store_staff.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        store = serializer.save()
+
+        #更新store_staff表
+        store_staff = StoreStaff(store=store, staff=request.user, position='OW')
+        store_staff.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 #店铺查询、更新、注销API
 class StoreDetailView(APIView):
     def handle_exception(self, exc):
-        response = handle_api_exception(exc, True)
+        response = handle_api_exception(exc, SW_DEBUG)
         return Response(response, status=exc.status_code)
     
     def get_object(self, pk):
         try:
             return Store.objects.get(pk=pk)
         except Store.DoesNotExist:
-            raise Http404
+            raise serializers.ValidationError({'store': ['对象不存在。']}, 'does_not_exit')
 
     def has_permission(self, store, owner):
         if store.owner.id != owner.id and not owner.is_superuser:
@@ -73,10 +73,9 @@ class StoreDetailView(APIView):
         if 'name' not in request.data:
             request.data['name'] = store.name
         serializer = StoreSerializer(store, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid()
+        serializer.save()
+        return Response(serializer.data)
 
     def delete(self, request, pk, format=None):
         store = self.get_object(pk)
