@@ -8,118 +8,86 @@ from rest_framework import status
 from rest_framework import serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied, AuthenticationFailed
-from rest_framework_jwt.utils import jwt_encode_handler
-from rest_framework_jwt.views import obtain_jwt_token
-from rest_framework_jwt.views import JSONWebTokenAPIView
+from rest_framework.exceptions import PermissionDenied
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
-from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from rest_framework_jwt.utils import (
     jwt_payload_handler, 
-    jwt_encode_handler,
-    jwt_response_payload_handler)
-
+    jwt_encode_handler,)
 from django.contrib.auth.hashers import check_password
 
 from ..models import XingUser, AppVersion
 from public.utils import (
     SW_DEBUG,
-    RegisterAuthentication, 
+    PublicAuthentication, 
     TokenPermission,
+    SMSPermission,
     handle_api_exception,)
 from ..serializers import (
     AppVersionSerializer, 
-    TokenSerializer,
+    AppTokenSerializer,
     SMSCodeSerializer, 
     PasswordSerializer,
     UserRegisterSerializer,
     XingUserSerializer)
 
-#获取App版本信息API
-class AppVersionView(APIView):
+# 获取App Token API
+class AppTokenView(APIView):
+    authentication_classes = ()
     permission_classes = ()
 
-    def handle_exception(self, exc):
-        response = handle_api_exception(exc, SW_DEBUG)
-        return Response(response, status=exc.status_code)
-
-    def get(self, request, format=None):
-        if 'app_name' in request.query_params:
-            app_name = request.query_params['app_name']
-        elif 'app_name' in request.data:
-            #为了兼容http测试工具
-            app_name = request.data['app_name']
-        else:
-            raise serializers.ValidationError({'app_name': ['该字段是必填项。']})
-            #return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            app = AppVersion.objects.get(app_name=app_name)
-        except AppVersion.DoesNotExist:
-            raise serializers.ValidationError({'app_name': ['对象不存在。']}, 'does_not_exit')
-            #return Response(status=status.HTTP_404_NOT_FOUND)
-        serializer = AppVersionSerializer(app)
-        return Response(serializer.data)
-
-# 获取Token API
-class TokenView(JSONWebTokenAPIView):
     def handle_exception(self, exc):
         response = handle_api_exception(exc, SW_DEBUG)
         return Response(response, status=exc.status_code)
 
     def post(self, request, format=None):
-        serializer = TokenSerializer(data=request.data)
+        serializer = AppTokenSerializer(data=request.data)
         
         serializer.is_valid(raise_exception=True)
-        user = serializer.object.get('user') or request.user
-        token = serializer.object.get('token')
-        response = jwt_response_payload_handler(token, user, request)
+        appVersion = serializer.validated_data.get('app_version')
+        token = serializer.validated_data.get('token')
+        response = {'app_version': appVersion, 'token': token}
         return Response(response)
 
 #获取短消息验证码API
 class SMSCodeView(APIView):
-    permission_classes = ()
-    #authentication_classes = ()
+    authentication_classes = (PublicAuthentication,)
+    permission_classes = (TokenPermission,)
 
     def handle_exception(self, exc):
         response = handle_api_exception(exc, SW_DEBUG)
         return Response(response, status=exc.status_code)
     
     def post(self, request, format=None):
-        if request.user.username != 'Authenticator':
-            raise PermissionDenied
-
         serializer = SMSCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         mobile = serializer.validated_data['mobile']
         #生成随机验证码，向目标手机发送验证码，用手机号码和验证码生成token
         token = jwt_encode_handler({
-            'exp': timezone.now() + timezone.timedelta(minutes=3),  #有效期：3分钟
+            'exp': timezone.now() + timezone.timedelta(minutes=5),  #有效期：3分钟
             'mobile': mobile,
             'sms_code': '118590'})
         return Response({'token': token}, status=status.HTTP_200_OK)
 
 #用户登录API
-class UserLoginView(JSONWebTokenAPIView):
-    authentication_classes = (JSONWebTokenAuthentication,)
+class UserLoginView(APIView):
+    authentication_classes = (PublicAuthentication,)
+    permission_classes = (TokenPermission,)
 
-    serializer_class = JSONWebTokenSerializer
-    
     def handle_exception(self, exc):
         response = handle_api_exception(exc, SW_DEBUG)
         return Response(response, status=exc.status_code)
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = JSONWebTokenSerializer(data=request.data)
 
         # raise_exception=True,保证异常被handle_exception()处理
         serializer.is_valid(raise_exception=True)
-        user = serializer.object.get('user') or request.user
+        user = serializer.validated_data.get('user') or request.user
         token = serializer.object.get('token')
         response_data = {
+            'user': XingUserSerializer(user).data,
             'token': token,
-            'user': XingUserSerializer(user).data
             }
         user.last_login = timezone.now()
         user.save()
@@ -127,8 +95,8 @@ class UserLoginView(JSONWebTokenAPIView):
 
 #用户注册API
 class UserRegisterView(APIView):
-    permission_classes = ()
-    authentication_classes = [RegisterAuthentication]
+    authentication_classes = [PublicAuthentication]
+    permission_classes = [SMSPermission]
 
     def handle_exception(self, exc):
         response = handle_api_exception(exc, SW_DEBUG)
@@ -137,17 +105,6 @@ class UserRegisterView(APIView):
     def post(self, request, format=None):
         serializer = UserRegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        #从token中取出电话号码和校验码进行校验
-        try:
-            #payload = jwt_decode_handler(token)
-            payload = request.auth
-            if payload['mobile'] != request.data['mobile'] or\
-                payload['sms_code'] != request.data['sms_code']:
-                raise serializers.ValidationError({'non_field_errors': ['一致性校验错误。']}, 'disaccord')
-        except:
-            raise AuthenticationFailed('Authorization payload is invalid.')
-
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
         
@@ -174,7 +131,7 @@ class UserDetailView(APIView):
         if 'username' not in request.data:
             request.data['username'] = user.username
         if 'mobile' in request.data:
-            exp = '^1((3[\d])|(4[75])|(5[^3|4])|(66)|(7[3678])|(8[\d])|(9[89]))\d{8}$'
+            exp = r'^1((3[\d])|(4[75])|(5[^3|4])|(66)|(7[3678])|(8[\d])|(9[89]))\d{8}$'
             if not re.findall(exp, request.data['mobile']):
                 raise serializers.ValidationError({'mobile': ['无效的手机号码']})
         else:

@@ -10,13 +10,14 @@ from rest_framework.authentication import (
     BaseAuthentication, 
     get_authorization_header)
 
+from store_api.models import AppVersion
 from store_api.serializers import XingUserSerializer
 
 # 调试开关
 SW_DEBUG = True
 
-# 用户注册时的鉴权类
-class RegisterAuthentication(BaseAuthentication):
+# App token鉴权lei,用户登录、获取验证码、用户注册时使用
+class PublicAuthentication(BaseAuthentication):
     #重写鉴权认证方法
     def authenticate(self, request):
         #获取请求头中的Token内容
@@ -52,18 +53,33 @@ class RegisterAuthentication(BaseAuthentication):
 
         return(None, payload)
 
+class TokenPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        try:
+            app_name = request.auth['app_name']
+            ver_code = request.auth['ver_code']
+            AppVersion.objects.get(app_name=app_name, ver_code=ver_code)
+            return True
+        except:
+            return False
+
+class SMSPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        sms_sth = {
+            'mobile': request.auth.get('mobile'),
+            'sms_code': request.auth.get('sms_code')
+        }
+        if all(sms_sth):
+            return (sms_sth['mobile'] == request.data.get('mobile') and\
+                sms_sth['sms_code'] == request.data.get('sms_code'))
+        return False
+
 def jwt_response_payload_handler(token, user=None, request=None):
     response = {'token': token}
     if user:
         response['user'] = XingUserSerializer(user).data
 
     return response
-
-# 定义获取Token的权限
-class TokenPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        #限制 Authenticator 不能执行操作
-        return request.user.username != 'Authenticator'
 
 #APIView异常处理函数
 def handle_api_exception(exc, debug=False):
@@ -78,26 +94,29 @@ def handle_api_exception(exc, debug=False):
     if not isinstance(exc, exceptions.APIException):
         if debug:
             print('Exception type:', type(exc))
-        return {'code': 777, 'detail': '未知原因的错误。'}
+        return {'code': 777, 
+                'field': 'non_field_errors',
+                'message': '未知原因的错误。'}
 
     #if exc.default_code == 'authentication_failed':
     #    return {'code': exc.status_code, 'detail': exc.args[0]}
     
     if exc.default_code == 'invalid':
         field, code = exc.get_codes().popitem()
-        detail = {'field': field, 'message': exc.args[0][field][0]}
+        response = {'field': field, 'message': exc.args[0][field][0]}
         if code[0] == 'unique': # 唯一性冲突
-            response = {'code': 701, 'detail': detail}
+            response['code'] = 701
         elif code[0] == 'required': # 缺失关键参数
-            response = {'code': 702, 'detail': detail}
+            response['code'] = 702
         elif code[0] == 'disabled': # user account is disabled
-            response = {'code': 703, 'detail': detail}
+            response['code'] = 703
         elif code[0] == 'disaccord':
-            response = {'code': 704, 'detail': detail}
+            response['code'] = 704
         else: #if code in ('does_not_exit', 'null', 'incorrect_type'): #无效的参数
-            response = {'code': 705, 'detail': detail}
+            response['code'] = 705
     else:
-        detail = {'field': 'non_field_errors', 'message': exc.default_detail}
-        response = {'code': exc.status_code, 'detail': detail}
+        response = {'code': exc.status_code, 
+                    'field': 'non_field_errors', 
+                    'message': exc.default_detail}
 
     return response

@@ -1,11 +1,9 @@
 from django.urls import path
-from rest_framework_jwt.views import obtain_jwt_token
 
 from .views import *
 
 urlpatterns = [
-    path('token/', TokenView.as_view(), name='token'),
-    path('version/', AppVersionView.as_view(), name='app_version'),
+    path('token/', AppTokenView.as_view(), name='app_token'),
     path('sms/', SMSCodeView.as_view(), name='sms_code'),
     path('register/', UserRegisterView.as_view(), name='user_register'),
     path('login/', UserLoginView.as_view(), name='user_login'),
