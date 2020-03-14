@@ -7,3 +7,4 @@ from .user_views import (
     UserRegisterView, 
     UserDetailView, 
     PasswordView)
+

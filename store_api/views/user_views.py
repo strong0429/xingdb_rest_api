@@ -17,7 +17,6 @@ from django.contrib.auth.hashers import check_password
 
 from ..models import XingUser, AppVersion
 from public.utils import (
-    SW_DEBUG,
     PublicAuthentication, 
     TokenPermission,
     SMSPermission,
@@ -36,7 +35,7 @@ class AppTokenView(APIView):
     permission_classes = ()
 
     def handle_exception(self, exc):
-        response = handle_api_exception(exc, SW_DEBUG)
+        response = handle_api_exception(exc)
         return Response(response, status=exc.status_code)
 
     def post(self, request, format=None):
@@ -54,7 +53,7 @@ class SMSCodeView(APIView):
     permission_classes = (TokenPermission,)
 
     def handle_exception(self, exc):
-        response = handle_api_exception(exc, SW_DEBUG)
+        response = handle_api_exception(exc)
         return Response(response, status=exc.status_code)
     
     def post(self, request, format=None):
@@ -75,7 +74,7 @@ class UserLoginView(APIView):
     permission_classes = (TokenPermission,)
 
     def handle_exception(self, exc):
-        response = handle_api_exception(exc, SW_DEBUG)
+        response = handle_api_exception(exc)
         return Response(response, status=exc.status_code)
 
     def post(self, request, *args, **kwargs):
@@ -99,7 +98,7 @@ class UserRegisterView(APIView):
     permission_classes = [SMSPermission]
 
     def handle_exception(self, exc):
-        response = handle_api_exception(exc, SW_DEBUG)
+        response = handle_api_exception(exc)
         return Response(response, status=exc.status_code)
     
     def post(self, request, format=None):
@@ -111,7 +110,7 @@ class UserRegisterView(APIView):
 #用户信息查询、更新API
 class UserDetailView(APIView):
     def handle_exception(self, exc):
-        response = handle_api_exception(exc, SW_DEBUG)
+        response = handle_api_exception(exc)
         return Response(response, status=exc.status_code)
     
     def get(self, request, pk, format=None):
@@ -152,7 +151,7 @@ class UserDetailView(APIView):
 #用户修改密码API
 class PasswordView(APIView):
     def handle_exception(self, exc):
-        response = handle_api_exception(exc, SW_DEBUG)
+        response = handle_api_exception(exc)
         return Response(response, status=exc.status_code)
     
     def put(self, request, pk, format=None):

@@ -6,15 +6,14 @@ from rest_framework import exceptions, permissions
 from rest_framework_jwt.settings import api_settings
 from rest_framework_jwt.utils import jwt_decode_handler, jwt_payload_handler
 
+from django.conf import settings
+
 from rest_framework.authentication import (
     BaseAuthentication, 
     get_authorization_header)
 
 from store_api.models import AppVersion
 from store_api.serializers import XingUserSerializer
-
-# 调试开关
-SW_DEBUG = True
 
 # App token鉴权lei,用户登录、获取验证码、用户注册时使用
 class PublicAuthentication(BaseAuthentication):
@@ -82,8 +81,8 @@ def jwt_response_payload_handler(token, user=None, request=None):
     return response
 
 #APIView异常处理函数
-def handle_api_exception(exc, debug=False):
-    if debug:
+def handle_api_exception(exc):
+    if settings.DEBUG:
         print('args:', exc.args)
         print('default_code:', exc.default_code)
         print('default_detail:', exc.default_detail)
@@ -92,15 +91,12 @@ def handle_api_exception(exc, debug=False):
         print('status_code:', exc.status_code)
 
     if not isinstance(exc, exceptions.APIException):
-        if debug:
+        if settings.DEBUG:
             print('Exception type:', type(exc))
         return {'code': 777, 
                 'field': 'non_field_errors',
                 'message': '未知原因的错误。'}
 
-    #if exc.default_code == 'authentication_failed':
-    #    return {'code': exc.status_code, 'detail': exc.args[0]}
-    
     if exc.default_code == 'invalid':
         field, code = exc.get_codes().popitem()
         response = {'field': field, 'message': exc.args[0][field][0]}

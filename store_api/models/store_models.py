@@ -1,10 +1,12 @@
+from os import path
 from django.db import models
 from django.utils import timezone
+
+from xingdb_proj.settings import MEDIA_ROOT
 
 from .user_models import XingUser
 
 # Create your models here.
-
     
 #店铺类别表
 class StoreCategory(models.Model):
@@ -20,6 +22,12 @@ class PayMode(models.Model):
     class Meta:
         db_table = 'xing_pay_mode'
 
+def logo_upload_to(instance, filename):
+    ext = filename.split('.')[-1]
+    logo_file = '.'.join(['logo%06d'%instance.id, ext])
+    file_path = path.join('stores', 'logo')
+    return path.join(file_path, logo_file)
+
 #注册店铺信息表
 class Store(models.Model):
     name = models.CharField('店铺名称', max_length=45, unique=True)
@@ -32,7 +40,11 @@ class Store(models.Model):
     addr_street = models.CharField('街道/村', max_length=16, null=True, blank=True)
     addr_detail = models.CharField('具体', max_length=45, null=True, blank=True)
     phone = models.CharField('联系电话', max_length=12, null=True, blank=True)
-    photo_name = models.CharField('图片名称', max_length=45, null=True, blank=True)
+    paycode_wec = models.CharField('微信收款码', max_length=255, null=True, blank=True)
+    paycode_ali = models.CharField('支付宝收款码', max_length=255, null=True, blank=True)
+
+    logo = models.ImageField('店铺logo', upload_to=logo_upload_to, null=True, blank=True)
+    #photo = models.CharField('图片名称', max_length=45, null=True, blank=True)
 
     class Meta:
         db_table = 'xing_store'
@@ -42,12 +54,14 @@ class Store(models.Model):
     def __str__(self):
         return self.name
 
+        
 #店铺付费记录表
 class PayRecord(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
     pay_mode = models.ForeignKey(PayMode, on_delete=models.PROTECT)
-    pay_date = models.DateTimeField('付费日期', auto_now_add=True)
     pay_amount = models.FloatField('付费金额', default=0.0)
+    pay_date = models.DateField('付费日期', auto_now_add=True)
+    exp_date = models.DateField('有效日期', default='2020-01-01')
 
     class Meta:
         db_table = 'xing_pay_record'
@@ -73,3 +87,4 @@ class StoreStaff(models.Model):
         db_table = 'xing_store_staffs'
         ordering = ['store', 'date_joined']
         unique_together = ['store', 'staff']
+

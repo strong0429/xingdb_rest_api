@@ -19,10 +19,12 @@ class StoreSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Store
-        exclude = ('id',)
+        fields='__all__'
+        #exclude = ('id',)
         
         extra_kwargs = {
             'category': {'write_only': True},
+            'id': {'read_only': True},
             }
             
     def get_staffs(self, obj):
@@ -52,7 +54,7 @@ class StoreSerializer(serializers.ModelSerializer):
         instance.addr_district = validated_data.get('addr_district', instance.addr_district)
         instance.addr_street = validated_data.get('addr_street', instance.addr_street)
         instance.addr_detail = validated_data.get('addr_detail', instance.addr_detail)
-        instance.photo_name = validated_data.get('photo_name', instance.photo_name)
+        instance.logo = validated_data.get('logo', instance.logo)
         instance.save()
         return instance
 

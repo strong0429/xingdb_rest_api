@@ -1,5 +1,6 @@
 /.env/*
 /.vscode/*
+/media/*
 */migrations/*
 */__pycache__/*
 */migrations/__pycache__/*
