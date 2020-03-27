@@ -31,7 +31,6 @@ class StoreListView(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        #request.data['owner'] = request.user.id
         serializer = StoreSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         store = serializer.save()
@@ -63,12 +62,9 @@ class StoreDetailView(APIView):
 
     def put(self, request, pk, format=None):
         store = self.get_object(pk, request.user)
-        if 'category' not in request.data:
-            request.data['category'] = store.category.id
-        if 'name' not in request.data:
-            request.data['name'] = store.name
-        serializer = StoreSerializer(store, data=request.data)
-        serializer.is_valid()
+        #partial=True, 只更新部分字段；若不设置，则data中必须包含模型的关键字段；
+        serializer = StoreSerializer(store, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
 

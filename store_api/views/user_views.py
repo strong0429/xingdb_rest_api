@@ -127,19 +127,15 @@ class UserDetailView(APIView):
 
         user = request.user
 
-        if 'username' not in request.data:
-            request.data['username'] = user.username
         if 'mobile' in request.data:
             exp = r'^1((3[\d])|(4[75])|(5[^3|4])|(66)|(7[3678])|(8[\d])|(9[89]))\d{8}$'
             if not re.findall(exp, request.data['mobile']):
                 raise serializers.ValidationError({'mobile': ['无效的手机号码']})
-        else:
-            request.data['mobile'] = user.mobile
         if 'id_card' in request.data:
             # 身份证验证
             pass
-
-        serializer = XingUserSerializer(user, data=request.data)
+        # 设置partial=True，允许只提供需要更新的字段；
+        serializer = XingUserSerializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 

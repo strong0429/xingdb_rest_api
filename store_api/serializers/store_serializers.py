@@ -19,8 +19,8 @@ class StoreSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Store
-        fields='__all__'
-        #exclude = ('id',)
+        #fields='__all__'
+        exclude = ('staffs',)
         
         extra_kwargs = {
             'category': {'write_only': True},
@@ -44,8 +44,6 @@ class StoreSerializer(serializers.ModelSerializer):
         return Store.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        #owner_id = instance.owner.id
-        #instance.owner = validated_data.get('owner', instance.owner)
         instance.name = validated_data.get('name', instance.name)
         instance.phone = validated_data.get('phone', instance.phone)
         instance.category = validated_data.get('category', instance.category)
@@ -55,6 +53,8 @@ class StoreSerializer(serializers.ModelSerializer):
         instance.addr_street = validated_data.get('addr_street', instance.addr_street)
         instance.addr_detail = validated_data.get('addr_detail', instance.addr_detail)
         instance.logo = validated_data.get('logo', instance.logo)
+        instance.paycode_wec = validated_data.get('paycode_wec', instance.paycode_wec)
+        instance.paycode_ali = validated_data.get('paycode_ali', instance.paycode_ali)
         instance.save()
         return instance
 

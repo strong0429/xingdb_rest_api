@@ -106,7 +106,7 @@ def handle_api_exception(exc):
             response['code'] = 702
         elif code[0] == 'disabled': # user account is disabled
             response['code'] = 703
-        elif code[0] == 'disaccord':
+        elif code[0] == 'disaccord': # 一致性错误
             response['code'] = 704
         else: #if code in ('does_not_exit', 'null', 'incorrect_type'): #无效的参数
             response['code'] = 705

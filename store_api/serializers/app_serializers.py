@@ -27,7 +27,6 @@ class AppTokenSerializer(serializers.Serializer):
         if not attrs.get('name'):
             msg = _('必须提供App名字。')
             raise serializers.ValidationError(msg)
-
         apps = AppVersion.objects.filter(app_name=attrs.get('name'))
         if not apps:
             raise serializers.ValidationError('对象不存在。', 'dose_not_exit')

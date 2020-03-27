@@ -7,3 +7,5 @@ from .user_serializers import (
     SMSCodeSerializer)
 
 from .app_serializers import AppVersionSerializer, AppTokenSerializer
+from .goods_serializers import GoodsSerializer
+from .jxc_serializers import SaleRecordSerializer

@@ -1,6 +1,5 @@
 from os import path
 from django.db import models
-from django.utils import timezone
 
 from xingdb_proj.settings import MEDIA_ROOT
 
@@ -30,10 +29,10 @@ def logo_upload_to(instance, filename):
 
 #注册店铺信息表
 class Store(models.Model):
-    name = models.CharField('店铺名称', max_length=45, unique=True)
+    name = models.CharField('店铺名称', max_length=45)
     reg_date = models.DateTimeField('注册日期', auto_now_add=True)
     staffs = models.ManyToManyField(XingUser, through='StoreStaff')
-    category = models.ForeignKey(StoreCategory, on_delete=models.PROTECT)
+    category = models.ForeignKey(StoreCategory, on_delete=models.PROTECT, null=True, blank=True)
     addr_province = models.CharField('省', max_length=16, null=True, blank=True)
     addr_city = models.CharField('市/县', max_length=16, null=True, blank=True)
     addr_district = models.CharField('区/镇', max_length=16, null=True, blank=True)
@@ -44,12 +43,11 @@ class Store(models.Model):
     paycode_ali = models.CharField('支付宝收款码', max_length=255, null=True, blank=True)
 
     logo = models.ImageField('店铺logo', upload_to=logo_upload_to, null=True, blank=True)
-    #photo = models.CharField('图片名称', max_length=45, null=True, blank=True)
 
     class Meta:
         db_table = 'xing_store'
-        #unique_together = ['owner', 'name']
         ordering = ['addr_province', 'addr_city', 'reg_date']
+        unique_together = ['name', 'addr_city', 'addr_district', 'addr_street']
 
     def __str__(self):
         return self.name
