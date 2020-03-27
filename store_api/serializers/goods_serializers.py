@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import Goods, GoodsCategoryL1, GoodsCategoryL2
+from ..models import Goods, GoodsCategoryL1, GoodsCategoryL2, Supplier
 
 class GoodsSerializer(serializers.ModelSerializer):
     cl2_name = serializers.ReadOnlyField(source='category.name')
@@ -17,3 +17,11 @@ class GoodsSerializer(serializers.ModelSerializer):
         if len(value) == 13 or len(value) == 8:
             return value
         raise serializers.ValidationError('无效的商品条码。')
+
+class SupplierSerializer(serializers.ModelSerializer):
+    def validate_phone(self, value):
+        return value
+
+    class Meta:
+        model = Supplier
+        fields = '__all__'

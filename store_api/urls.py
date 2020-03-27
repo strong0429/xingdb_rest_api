@@ -13,7 +13,9 @@ urlpatterns = [
     path('stores/', StoreListView.as_view(), name='store_list'),
     path('stores/<int:pk>/', StoreDetailView.as_view(), name='store_detail'),
     path('stores/<int:store_id>/sales/', SaleRecordView.as_view(), name='sales'),
+    path('stores/<int:store_id>/purchases/', PurchaseView.as_view(), name='purchases'),
     
-    path('goods/', GoodsListView.as_view(), name='goods')
+    path('goods/', GoodsListView.as_view(), name='goods'),
+    path('suppliers/', SupplierView.as_view(), name='supplier'),
 ]
 

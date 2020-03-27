@@ -7,6 +7,6 @@ from .user_views import (
     UserRegisterView, 
     UserDetailView, 
     PasswordView)
-from .goods_views import GoodsListView
-from .jxc_views import SaleRecordView
+from .goods_views import GoodsListView, SupplierView
+from .jxc_views import SaleRecordView, PurchaseView
 
