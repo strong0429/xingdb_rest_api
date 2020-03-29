@@ -1,24 +1,14 @@
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import F
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import exceptions, permissions
 from rest_framework.serializers import ValidationError
 from rest_framework.settings import api_settings
 
-from public.utils import handle_api_exception
-from ..serializers import SaleRecordSerializer, PurchaseSerializer
-from ..models import SaleRecord, StoreStaff, Purchase
-
-class JXC_Pagination(api_settings.DEFAULT_PAGINATION_CLASS):
-    #每页显示多少个
-    #page_size = 10
-    #默认每页显示3个，可以通过传入pager1/?page=2&size=4,改变默认每页显示的个数
-    page_size_query_param = "size"
-    #最大页数不超过100
-    max_page_size = 100
-    #获取页码数的
-    #page_query_param = "page"
+from public.utils import PublicView
+from ..models import SaleRecord, StoreStaff, Purchase, Storage
+from ..serializers import SaleRecordSerializer, PurchaseSerializer, StorageSerializer
 
 class JXC_Permission(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -32,24 +22,9 @@ class JXC_Permission(permissions.BasePermission):
             return False
         return True
 
-class JXC_View(APIView):
+class SaleRecordView(PublicView):
     permission_classes = (JXC_Permission, )
-    pagination_class = JXC_Pagination
 
-    @property
-    def paginator(self):
-        if not hasattr(self, '_paginator'):
-            if self.pagination_class is None:
-                self._paginator = None
-            else:
-                self._paginator = self.pagination_class()
-        return self._paginator
-
-    def handle_exception(self, exc):
-        response = handle_api_exception(exc)
-        return Response(response, status=exc.status_code)
-
-class SaleRecordView(JXC_View):
     def get(self, request, store_id, format=None):
         if 'start_time' and 'end_time' in request.data:
             srs = SaleRecord.objects.filter(store=store_id, 
@@ -95,7 +70,9 @@ class SaleRecordView(JXC_View):
         serializer = SaleRecordSerializer(srs, many=True)
         return Response(serializer.data)
 
-class PurchaseView(JXC_View):
+class PurchaseView(PublicView):
+    permission_classes = (JXC_Permission, )
+
     def get(self, request, store_id, format=None):
         if 'start_time' and 'end_time' in request.data:
             records = Purchase.objects.filter(store=store_id, 
@@ -121,5 +98,44 @@ class PurchaseView(JXC_View):
 
         serializer = PurchaseSerializer(data=data)
         serializer.is_valid(raise_exception=True)
+        purchase = serializer.save()
+
+        #对应更新 storage 表
+        try:
+            storage = Storage.objects.get(store=purchase.store, 
+                goods=purchase.goods, supplier=purchase.supplier)
+            storage.count_h = F('count_h') + purchase.count
+            storage.count_c = F('count_c') + purchase.count
+        except:
+            storage = Storage(store=purchase.store, goods=purchase.goods, supplier=purchase.supplier, 
+                count_h=purchase.count, count_c=purchase.count)
+        storage.price = request.data['sale_price']
+        storage.save()
+
+        return Response(serializer.data)
+
+class StorageView(PublicView):
+    permission_classes = (JXC_Permission, )
+
+    def get(self, request, store_id, format=None):
+        records = Storage.objects.filter(store=store_id).order_by('count_c')
+        records = self.paginator.paginate_queryset(records, request, self)
+        serializer = StorageSerializer(records, many=True)
+        return self.paginator.get_paginated_response(serializer.data)
+
+    def put(self, request, store_id, format=None):
+        if 'goods' and 'supplier' in request.data:
+            record = Storage.objects.get(store=store_id, 
+                goods=request.data['goods'], supplier=request.data['supplier'])
+        elif 'goods' in request.data:
+            record = Storage.objects.get(store=store_id, goods=request.data['goods'])
+        else:
+            raise ValidationError({'goods': ['该字段是必填项。']}, 'required')
+        record.editor = request.user
+        record.edit_date = timezone.now()
+
+        serializer = StorageSerializer(record, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
         serializer.save()
+
         return Response(serializer.data)

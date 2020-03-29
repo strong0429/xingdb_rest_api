@@ -37,7 +37,7 @@ class Purchase(models.Model):
 class Storage(models.Model):
     store = models.ForeignKey(Store, models.CASCADE)
     goods = models.ForeignKey(Goods, models.CASCADE, to_field='barcode')
-    count_t = models.BigIntegerField('历史库存')
+    count_h = models.BigIntegerField('历史库存')
     count_c = models.IntegerField('当前库存')
     price = models.FloatField('售价')
     discount = models.FloatField('折扣', default=1.0)
@@ -45,7 +45,9 @@ class Storage(models.Model):
     date_pe = models.DateTimeField('促销结束时间', null=True, blank=True)
     editor = models.ForeignKey(XingUser, models.CASCADE, null=True, blank=True)
     edit_date = models.DateTimeField('编辑时间', null=True, blank=True)
+    supplier = models.ForeignKey(Supplier, models.CASCADE, null=True, blank=True)
 
     class Meta:
         db_table = 'xing_storage'
         ordering = ('store', 'count_c')
+        unique_together = ('store', 'goods', 'supplier')

@@ -41,6 +41,7 @@ class Supplier(models.Model):
     contactor = models.CharField('联系人', max_length=45)
     phone = models.CharField('联系电话', max_length=45)
     addr = models.CharField('地址', max_length=128, null=True, blank=True)
+    store = models.ManyToManyField(Store)
 
     class Meta:
         db_table = 'xing_supplier'

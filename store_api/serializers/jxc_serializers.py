@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import SaleRecord, Purchase
+from ..models import SaleRecord, Purchase, Storage
 
 class SaleRecordSerializer(serializers.ModelSerializer):
     goods_name = serializers.ReadOnlyField(source='goods.name')
@@ -25,9 +25,15 @@ class SaleRecordSerializer(serializers.ModelSerializer):
 class PurchaseSerializer(serializers.ModelSerializer):
     goods_name = serializers.ReadOnlyField(source='goods.name')
     buyer_name = serializers.ReadOnlyField(source='buyer.username')
-    #supplier_name = serializers.ReadOnlyField(source='supplier.name')
+    supplier_name = serializers.ReadOnlyField(source='supplier.name')
     #supplier_contactor = serializers.ReadOnlyField(source='supplier.contactor')
     #supplier_phone = serializers.ReadOnlyField(source='supplier.phone')
+
+    #临时字段，配合更新 storage 表
+    sale_price = serializers.FloatField(write_only=True)
+    def validate(self, attrs):
+        del attrs['sale_price']
+        return attrs
 
     class Meta:
         model = Purchase
@@ -37,3 +43,26 @@ class PurchaseSerializer(serializers.ModelSerializer):
             'buyer': {'write_only': True},
             #'supplier': {'write_only': True},
         }
+
+class StorageSerializer(serializers.ModelSerializer):
+    goods_name = serializers.ReadOnlyField(source='goods.name')
+    supplier_name = serializers.ReadOnlyField(source='supplier.name')
+    editor_name = serializers.ReadOnlyField(source='editor.username')
+
+    class Meta:
+        model = Storage
+        exclude = ('id',)
+        extra_kwargs = {
+            'store': {'write_only': True},
+            'editor': {'write_only': True},
+        }
+
+    def update(self, instance, validated_data):
+        instance.price = validated_data.get('price', instance.price)
+        instance.discount = validated_data.get('discount', instance.discount)
+        instance.date_ps = validated_data.get('date_ps', instance.date_ps)
+        instance.date_pe = validated_data.get('date_pe', instance.date_pe)
+        instance.editor = validated_data.get('editor', instance.editor)
+        instance.edit_date = validated_data.get('edit_date', instance.edit_date)
+        instance.save()
+        return instance
