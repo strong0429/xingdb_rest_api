@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from public.utils import PublicView
-from ..models import Goods, Supplier
+from ..models import Goods, Supplier, Store
 from ..serializers import GoodsSerializer, SupplierSerializer
 
 class GoodsListView(PublicView):
@@ -27,4 +27,5 @@ class SupplierView(PublicView):
         serializer = SupplierSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
         return Response(serializer.data)

@@ -5,7 +5,7 @@ from rest_framework import exceptions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from rest_framework_jwt.settings import api_settings
+from rest_framework.settings import api_settings
 
 #APIView异常处理函数
 def handle_api_exception(exc):
@@ -68,7 +68,7 @@ class PublicView(APIView):
 
     def handle_exception(self, exc):
         response = handle_api_exception(exc)
-        if response['code'] == 777:
-            return response(response, status=777)
+        if response['code'] == 777: 
+            return Response(response, status=500)
         return Response(response, status=exc.status_code)
 

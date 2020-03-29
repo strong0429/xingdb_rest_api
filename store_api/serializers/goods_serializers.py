@@ -26,5 +26,5 @@ class SupplierSerializer(serializers.ModelSerializer):
         model = Supplier
         fields = '__all__'
         extra_kwargs = {
-            'store': {'write_only': True},
+            'store': {'write_only': True}
         }

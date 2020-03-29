@@ -15,8 +15,8 @@ urlpatterns = [
     path('stores/<int:store_id>/sales/', SaleRecordView.as_view(), name='sales'),
     path('stores/<int:store_id>/purchases/', PurchaseView.as_view(), name='purchases'),
     path('stores/<int:store_id>/storages/', StorageView.as_view(), name='storages'),
-    path('stores/<int:store_id>/suppliers/', SupplierView.as_view(), name='supplier'),
     
+    path('suppliers/', SupplierView.as_view(), name='supplier'),
     path('goods/', GoodsListView.as_view(), name='goods'),
 ]
 
