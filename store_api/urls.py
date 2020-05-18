@@ -13,10 +13,13 @@ urlpatterns = [
     path('stores/', StoreListView.as_view(), name='store_list'),
     path('stores/<int:pk>/', StoreDetailView.as_view(), name='store_detail'),
     path('stores/<int:store_id>/sales/', SaleRecordView.as_view(), name='sales'),
+    path('stores/<int:store_id>/sales/sum/', SalesSummaryView.as_view(), name='sales_sum'),
     path('stores/<int:store_id>/purchases/', PurchaseView.as_view(), name='purchases'),
-    path('stores/<int:store_id>/storages/', StorageView.as_view(), name='storages'),
+    path('stores/<int:store_id>/stocks/', StockView.as_view(), name='stocks'),
     
     path('suppliers/', SupplierView.as_view(), name='supplier'),
     path('goods/', GoodsListView.as_view(), name='goods'),
+    path('goods/<str:barcode>/', GoodsDetailView.as_view(), name='goods_barcode'),
+    path('category/goods/', GoodsCategoryView.as_view(), name='category_goods')
 ]
 

@@ -5,6 +5,7 @@
 import re
 import jwt
 
+from django.conf import settings
 from django.utils import timezone
 from django.utils.encoding import smart_text
 from django.utils.translation import ugettext as _
@@ -23,17 +24,17 @@ from rest_framework_jwt.settings import api_settings
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
 from rest_framework_jwt.utils import jwt_payload_handler, jwt_decode_handler, jwt_encode_handler
 
-from public.utils import PublicView
-from ..models import XingUser, AppVersion
+from public.utils import PublicView, MOBILE_EXP
+from ..models import User, AppVersion
 from ..serializers import (
     AppVersionSerializer, 
     AppTokenSerializer,
     SMSCodeSerializer, 
     PasswordSerializer,
     UserRegisterSerializer,
-    XingUserSerializer)
+    UserSerializer)
 
-# App token鉴权lei,用户登录、获取验证码、用户注册时使用
+# App token鉴权类,用户登录、获取验证码、用户注册时使用
 class PublicAuthentication(BaseAuthentication):
     #重写鉴权认证方法
     def authenticate(self, request):
@@ -117,7 +118,7 @@ class SMSCodeView(PublicView):
         mobile = serializer.validated_data['mobile']
         #生成随机验证码，向目标手机发送验证码，用手机号码和验证码生成token
         token = jwt_encode_handler({
-            'exp': timezone.now() + timezone.timedelta(minutes=5),  #有效期：3分钟
+            'exp': timezone.now() + settings.JWT_AUTH['SMS_TOKEN_EXP_DELTA'],  #有效期：3分钟
             'mobile': mobile,
             'sms_code': '118590'})
         return Response({'token': token}, status=status.HTTP_200_OK)
@@ -135,7 +136,7 @@ class UserLoginView(PublicView):
         user = serializer.validated_data.get('user') or request.user
         token = serializer.object.get('token')
         response_data = {
-            'user': XingUserSerializer(user).data,
+            'user': UserSerializer(user).data,
             'token': token,
             }
         user.last_login = timezone.now()
@@ -157,9 +158,9 @@ class UserRegisterView(PublicView):
 class UserDetailView(PublicView):
     def get(self, request, pk, format=None):
         #只允许本人和超级用户查看
-        if pk != request.user.id and not request.user.is_superuser:
+        if pk != request.user.id and not request.user.is_admin:
             raise PermissionDenied
-        serializer = XingUserSerializer(request.user)
+        serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
     def put(self, request, pk, formate=None):
@@ -168,23 +169,18 @@ class UserDetailView(PublicView):
             raise PermissionDenied
 
         user = request.user
-
-        if 'mobile' in request.data:
-            exp = r'^1((3[\d])|(4[75])|(5[^3|4])|(66)|(7[3678])|(8[\d])|(9[89]))\d{8}$'
-            if not re.findall(exp, request.data['mobile']):
-                raise serializers.ValidationError({'mobile': ['无效的手机号码']})
-        if 'id_card' in request.data:
-            # 身份证验证
-            pass
         # 设置partial=True，允许只提供需要更新的字段；
-        serializer = XingUserSerializer(user, data=request.data, partial=True)
+        serializer = UserSerializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        #重新生成鉴权码
-        payload = jwt_payload_handler(user)
-        token = jwt_encode_handler(payload)
-        return Response({'username': user.username, 'token': token})
+        response = request.data.copy()
+        if 'mobile' in request.data:
+            #重新生成鉴权码
+            payload = jwt_payload_handler(user)
+            token = jwt_encode_handler(payload)
+            response['token'] = token
+        return Response(response)
 
 #用户修改密码API
 class PasswordView(PublicView):

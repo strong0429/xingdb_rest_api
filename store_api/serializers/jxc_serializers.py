@@ -1,10 +1,10 @@
 from rest_framework import serializers
 
-from ..models import SaleRecord, Purchase, Storage
+from ..models import SaleRecord, Purchase, Inventory
 
 class SaleRecordSerializer(serializers.ModelSerializer):
     goods_name = serializers.ReadOnlyField(source='goods.name')
-    goods_barcode = serializers.ReadOnlyField(source='goods.barcode')
+    #goods_barcode = serializers.ReadOnlyField(source='goods.barcode')
     clerk_name = serializers.ReadOnlyField(source='clerk.username')
 
     class Meta:
@@ -13,7 +13,7 @@ class SaleRecordSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'store': {'write_only': True},
             'clerk': {'write_only': True},
-            'goods': {'write_only': True},
+            #'goods': {'write_only': True},
         }
 
     def update(self, instance, validated_data):
@@ -44,16 +44,18 @@ class PurchaseSerializer(serializers.ModelSerializer):
             #'supplier': {'write_only': True},
         }
 
-class StorageSerializer(serializers.ModelSerializer):
+
+class StockSerializer(serializers.ModelSerializer):
     goods_name = serializers.ReadOnlyField(source='goods.name')
-    supplier_name = serializers.ReadOnlyField(source='supplier.name')
+    barcode = serializers.ReadOnlyField(source='goods.barcode')
     editor_name = serializers.ReadOnlyField(source='editor.username')
 
     class Meta:
-        model = Storage
+        model = Inventory
         exclude = ('id',)
         extra_kwargs = {
             'store': {'write_only': True},
+            'goods': {'write_only': True},
             'editor': {'write_only': True},
         }
 

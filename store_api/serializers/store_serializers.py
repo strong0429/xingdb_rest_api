@@ -3,7 +3,7 @@
     定义和店铺操作API接口相关的序列化类
 """
 from rest_framework import serializers
-from ..models import Store, StoreStaff, XingUser
+from ..models import Store, StoreStaff, User
 
 class StoreStaffSerializer(serializers.ModelSerializer):
     staff_name = serializers.ReadOnlyField(source='staff.username')
@@ -15,6 +15,7 @@ class StoreStaffSerializer(serializers.ModelSerializer):
 
 class StoreSerializer(serializers.ModelSerializer):
     #staffs = serializers.SerializerMethodField()
+    #owner = serializers.SerializerMethodField()
     category_name = serializers.ReadOnlyField(source='category.name')
 
     class Meta:
@@ -27,18 +28,11 @@ class StoreSerializer(serializers.ModelSerializer):
             'id': {'read_only': True},
             }
             
-    def get_staffs(self, obj):
-        data = []
-        for staff in obj.staffs.all():
-            ss = staff.storestaff_set.get(store=obj.id)
-            #ss = StoreStaff.objects.get(store=obj.id, staff=staff.id)
-            tmp = {}
-            tmp['id'] = staff.id
-            tmp['username'] = staff.username
-            tmp['mobile'] = staff.mobile
-            tmp['position'] = ss.position
-            data.append(tmp)
-        return data
+    def get_owner(self, obj):
+        staffs = obj.staffs.all()
+        #ss = staff.storestaff_set.get(store=obj.id, staff__in=staffs, position='O')
+        ss = StoreStaff.objects.get(store=obj.id, staff__in=staffs, position='O')
+        return ss.staff.id
 
     def create(self, validated_data):
         return Store.objects.create(**validated_data)

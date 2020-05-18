@@ -16,11 +16,14 @@ from .user_views import (
 from .goods_views import (
     GoodsListView, 
     SupplierView,
+    GoodsCategoryView,
+    GoodsDetailView,
 )
 
 from .jxc_views import (
     SaleRecordView, 
     PurchaseView,
-    StorageView,
+    StockView,
+    SalesSummaryView,
 )
 

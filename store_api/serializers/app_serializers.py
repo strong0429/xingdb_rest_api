@@ -1,9 +1,7 @@
 from django.utils import timezone
+from django.conf import settings
 from rest_framework import serializers
-from django.contrib.auth import authenticate
 from django.utils.translation import ugettext as _
-from rest_framework.exceptions import PermissionDenied
-from rest_framework_jwt.serializers import JSONWebTokenSerializer
 from rest_framework_jwt.serializers import jwt_payload_handler, jwt_encode_handler
 
 from ..models import AppVersion
@@ -27,17 +25,18 @@ class AppTokenSerializer(serializers.Serializer):
         if not attrs.get('name'):
             msg = _('必须提供App名字。')
             raise serializers.ValidationError(msg)
-        apps = AppVersion.objects.filter(app_name=attrs.get('name'))
+        apps = AppVersion.objects.filter(app_name=attrs.get('name')).order_by('-date_pub')
         if not apps:
             raise serializers.ValidationError('对象不存在。', 'dose_not_exit')
 
         payload = {
-            'app_name': apps[len(apps)-1].app_name,
-            'ver_code': apps[len(apps)-1].ver_code,
-            'exp': timezone.now() + timezone.timedelta(seconds=5000)}
+            'app_name': apps[0].app_name,
+            'ver_code': apps[0].ver_code,
+            'exp': timezone.now() + settings.JWT_AUTH['APP_TOKEN_EXP_DELTA']
+            }
 
         return {
             'token': jwt_encode_handler(payload),
-            'app_version': AppVersionSerializer(apps[len(apps)-1]).data
+            'app_version': AppVersionSerializer(apps[0]).data
         }
 

@@ -5,7 +5,7 @@ from .store_serializers import (
 )
 
 from .user_serializers import (
-    XingUserSerializer, 
+    UserSerializer, 
     UserRegisterSerializer, 
     PasswordSerializer,
     SMSCodeSerializer,
@@ -19,10 +19,12 @@ from .app_serializers import (
 from .goods_serializers import (
     GoodsSerializer, 
     SupplierSerializer,
+    GoodsCategory1Serializer,
+    GoodsCategory2Serializer,
 )
 
 from .jxc_serializers import (
     SaleRecordSerializer, 
     PurchaseSerializer,
-    StorageSerializer,
+    StockSerializer,
 )

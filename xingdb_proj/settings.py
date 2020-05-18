@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 #文件上传目录
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = '/media/'
+MEDIA_URL = '/xing/media/'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
@@ -31,9 +31,9 @@ SECRET_KEY = '+qiy^e^$#5t!ov4wb7^03jgv0dnakzyi5e4#!37ddm0g$e0xh0'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.0.106']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.0.103', '192.168.0.102']
 
-AUTH_USER_MODEL = 'store_api.XingUser'
+AUTH_USER_MODEL = 'store_api.User'
 
 # Application definition
 
@@ -65,6 +65,8 @@ REST_FRAMEWORK = {
 JWT_AUTH = {
     #'JWT_RESPONSE_PAYLOAD_HANDLER': 'public.utils.jwt_response_payload_handler',
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+    'APP_TOKEN_EXP_DELTA': datetime.timedelta(seconds=3600),
+    'SMS_TOKEN_EXP_DELTA': datetime.timedelta(seconds=3600),
 }
 
 MIDDLEWARE = [

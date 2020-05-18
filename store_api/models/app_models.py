@@ -9,8 +9,8 @@ class AppVersion(models.Model):
     detail = models.TextField('更新清单', null=True, blank=True)
 
     class Meta:
-        db_table = 'xing_app_version'
-        ordering = ['app_name', 'ver_code']
+        db_table = 'dbs_app_version'
+        #ordering = ['app_name', 'ver_code']
         unique_together = ['app_name', 'ver_code']
 
     def __str__(self):

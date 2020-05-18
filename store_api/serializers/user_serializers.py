@@ -5,29 +5,22 @@
 import re
 from rest_framework import serializers
 
-from ..models import XingUser, StoreStaff
+from public.utils import MobileValidator
+from ..models import User, StoreStaff
 from . import StoreSerializer, StoreStaffSerializer
 
 #短信验证码的序列化类
 class SMSCodeSerializer(serializers.Serializer):
-    """
-    验证是否为有效手机号码, 支持号码：
-    移动：134，135，136，137，138，139，147，150，151，152，157，158，159，178，182，183，184，187，188，198
-    联通：130，131，132，145，155，156，166，176，185，186
-    电信：133，153，173，177，180，181，189，199
-    """
-    mobile = serializers.CharField(max_length=12, required=True)
+    mobile_validator = MobileValidator()
+
+    mobile = serializers.CharField(max_length=12, validators=[mobile_validator])
     existed = serializers.BooleanField(default=False)
 
     def validate(self, attrs):
         mobile = attrs.get('mobile')
         existed = attrs.get('existed')
 
-        exp = r'^1((3[\d])|(4[75])|(5[^3|4])|(66)|(7[3678])|(8[\d])|(9[89]))\d{8}$'
-        if not re.findall(exp, mobile):
-            raise serializers.ValidationError('无效的手机号码。', 'incorrect')
-
-        objs = XingUser.objects.filter(mobile=mobile)
+        objs = User.objects.filter(mobile=mobile)
         if existed:   #判断号码是否已注册
             if not objs:
                 raise serializers.ValidationError('手机号码未注册。', 'does_not_exit')
@@ -42,8 +35,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     sms_code = serializers.CharField(max_length=6, write_only=True)
 
     class Meta:
-        model = XingUser
-        fields = ['username', 'password', 'mobile', 'sms_code']
+        model = User
+        fields = ['mobile', 'password', 'sms_code']
         extra_kwargs = {
             'password': {'write_only': True},
         }
@@ -54,58 +47,55 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return attrs
     
     def create(self, validated_data):
-        user = XingUser.objects.create_user(**validated_data)
-        user.save()
+        user = User.objects.create_user(**validated_data)
         return user
 
 #用户登录、查询、更新(不包括修改密码）序列化类
-class XingUserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     #stores = serializers.StringRelatedField(many=True, read_only=True)  #类的字符串
     #stores = serializers.PrimaryKeyRelatedField(many=True, read_only=True)  #类的主键
     #stores = serializers.SlugRelatedField(many=True, read_only=True, slug_field=('id', 'name'))  #slug_field指定的字段
-
+    
     stores = serializers.SerializerMethodField()
 
     class Meta:
-        model = XingUser
-        exclude = ('password', 'is_superuser', 'is_staff')
+        model = User
+        exclude = ('is_admin',)
         #以下属性不被修改
         extra_kwargs = {
             'is_active': {'read_only': True},
+            'password': {'write_only': True},
         }
     
     def get_stores(self, obj):
-        stores = obj.store_set.all()
-        '''
         data = []
-        for store in obj.store_set.all():
-            tmp = {}
-            tmp['id'] = store.id
-            tmp['name'] = store.name
-            tmp['addr_detail'] = store.addr_detail
-            #以下两种方法都可以
-            ss = obj.storestaff_set.get(store=store.id)
-            #ss = StoreStaff.objects.get(store=store.id, staff=obj.id)
-            tmp['position'] = ss.position
-            data.append(tmp)
+        store_staff = obj.storestaff_set.all()
+        for ss in store_staff:
+            data.append(StoreSerializer(ss.store).data)
+            data[-1]['position'] = ss.position
         return data
-        '''
-        return StoreSerializer(stores, many=True).data
+    
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        return user
 
     def update(self, instance, validated_data):
-        instance.username = validated_data.get('username', instance.username)
         instance.mobile = validated_data.get('mobile', instance.mobile)
-        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.autonym = validated_data.get('autonym', instance.autonym)
+        instance.nickname = validated_data.get('nickname', instance.nickname)
         instance.id_card = validated_data.get('id_card', instance.id_card)
+        instance.wechat = validated_data.get('wechat', instance.wechat)
+        instance.email = validated_data.get('email', instance.email)
+        instance.photo = validated_data.get('photo', instance.photo)
         instance.save()
         return instance
 
 #更改用户密码序列化类
 class PasswordSerializer(serializers.ModelSerializer):
-    old_password = serializers.CharField(max_length=8, write_only=True)
+    old_password = serializers.CharField(max_length=16, write_only=True)
 
     class Meta:
-        model = XingUser
+        model = User
         fields = ['password', 'old_password']
         extra_kwargs = {
             'password': {'write_only': True},
