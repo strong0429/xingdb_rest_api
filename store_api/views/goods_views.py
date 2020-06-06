@@ -1,3 +1,4 @@
+from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
@@ -29,7 +30,7 @@ class GoodsDetailView(PublicView):
 
 class SupplierView(PublicView):
     def get(self, request, format=None):
-        suppliers = Supplier.objects.all()
+        suppliers = Supplier.objects.filter(store=request.query_params['store_id'])
         serializer = SupplierSerializer(suppliers, many=True)
         return Response(serializer.data)
 
@@ -37,9 +38,21 @@ class SupplierView(PublicView):
         serializer = SupplierSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
         return Response(serializer.data)
 
+    def delete(self, request, format=None):
+        id = request.query_params['id']
+        supplier = Supplier.objects.get(pk=id)
+        supplier.delete()
+        return Response(status=status.HTTP_200_OK)
+
+    def put(self, request, format=None):
+        supplier = Supplier.objects.get(pk=request.data['id'])
+        serializer = SupplierSerializer(supplier, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_200_OK)
+ 
 class GoodsCategoryView(PublicView):
     authentication_classes = ()
     permission_classes = ()

@@ -17,8 +17,8 @@ urlpatterns = [
     path('stores/<int:store_id>/purchases/', PurchaseView.as_view(), name='purchases'),
     path('stores/<int:store_id>/stocks/', StockView.as_view(), name='stocks'),
     
-    path('suppliers/', SupplierView.as_view(), name='supplier'),
     path('goods/', GoodsListView.as_view(), name='goods'),
+    path('suppliers/', SupplierView.as_view(), name='supplier'),
     path('goods/<str:barcode>/', GoodsDetailView.as_view(), name='goods_barcode'),
     path('category/goods/', GoodsCategoryView.as_view(), name='category_goods')
 ]

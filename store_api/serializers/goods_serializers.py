@@ -29,6 +29,14 @@ class SupplierSerializer(serializers.ModelSerializer):
             'store': {'write_only': True}
         }
 
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.addr = validated_data.get('addr', instance.addr)
+        instance.phone = validated_data.get('phone', instance.phone)
+        instance.contacter = validated_data.get('contacter', instance.contacter)
+        instance.save()
+        return instance
+
 class GoodsCategory2Serializer(serializers.ModelSerializer):
     class Meta:
         model = GoodsCategoryL2
